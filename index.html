@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase Chat Simple</title>
+  <!-- 🔹 Firebase SDK via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>Mon Chat Firebase</h1>
+
+  <!-- 🔹 Authentification -->
+  <div id="auth-section">
+    <h2>Connexion / Inscription</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Mot de passe">
+    <button id="signup-btn">S'inscrire</button>
+    <button id="login-btn">Se connecter</button>
+    <button id="logout-btn">Se déconnecter</button>
+  </div>
+
+  <!-- 🔹 Formulaire pour poster un message -->
+  <div id="post-section" style="display:none;">
+    <h2>Envoyer un message</h2>
+    <input type="text" id="message" placeholder="Votre message">
+    <button id="send-btn">Envoyer</button>
+  </div>
+
+  <!-- 🔹 Liste des messages -->
+  <div id="messages-section">
+    <h2>Messages :</h2>
+    <ul id="messages-list"></ul>
+  </div>
+
+  <script>
+    // 🔹 Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDM2jPaCv30Goat6_labd6Eszc--u7g8xE",
+      authDomain: "cloudit3-4722b.firebaseapp.com",
+      projectId: "cloudit3-4722b",
+      storageBucket: "cloudit3-4722b.firebasestorage.app",
+      messagingSenderId: "301313914854",
+      appId: "1:301313914854:web:a53151373120b16b260827"
+    };
+
+    // 🔹 Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // 🔹 Elements DOM
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const signupBtn = document.getElementById("signup-btn");
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const postSection = document.getElementById("post-section");
+    const messageInput = document.getElementById("message");
+    const sendBtn = document.getElementById("send-btn");
+    const messagesList = document.getElementById("messages-list");
+
+    // 🔹 Sign up
+    signupBtn.addEventListener("click", () => {
+      auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
+        .then(userCredential => alert("Utilisateur créé !"))
+        .catch(error => alert(error.message));
+    });
+
+    // 🔹 Login
+    loginBtn.addEventListener("click", () => {
+      auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+        .then(userCredential => alert("Connecté !"))
+        .catch(error => alert(error.message));
+    });
+
+    // 🔹 Logout
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    // 🔹 Observer l'état de connexion
+    auth.onAuthStateChanged(user => {
+      postSection.style.display = user ? "block" : "none";
+    });
+
+    // 🔹 Envoyer un message
+    sendBtn.addEventListener("click", () => {
+      if (!messageInput.value) return;
+      db.collection("messages").add({
+        texte: messageInput.value,
+        email: auth.currentUser.email,
+        date: new Date()
+      });
+      messageInput.value = "";
+    });
+
+    // 🔹 Afficher les messages en temps réel
+    db.collection("messages").orderBy("date").onSnapshot(snapshot => {
+      messagesList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = `${doc.data().email} : ${doc.data().texte}`;
+        messagesList.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
