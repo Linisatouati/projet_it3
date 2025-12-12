@@ -1,110 +1,247 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Firebase Chat Simple</title>
-  <!-- 🔹 Firebase SDK via CDN -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <meta charset="UTF-8">
+    <title>Firebase Collaborative News Feed</title>
+    <style>
+        /* ==================================== */
+/* 1. Reset et Base (Look & Feel)       */
+/* ==================================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6; /* Arrière-plan doux */
+    color: #333;
+    max-width: 850px;
+    margin: 40px auto;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Légère ombre pour le corps */
+    border-radius: 10px;
+    background-color: #fff;
+}
+
+h1 {
+    text-align: center;
+    color: #007bff; /* Bleu vibrant */
+    border-bottom: 3px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+h2, h3 {
+    color: #555;
+    border-left: 5px solid #007bff;
+    padding-left: 10px;
+    margin-top: 25px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 30px 0;
+}
+
+
+/* ==================================== */
+/* 2. Formulaires et Inputs             */
+/* ==================================== */
+input[type="email"], 
+input[type="password"], 
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+input:focus, textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+
+/* ==================================== */
+/* 3. Boutons                           */
+/* ==================================== */
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, transform 0.1s;
+    margin-right: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+/* Bouton secondaire (ex: Annuler) */
+#hide-signup-btn, #show-signup-btn {
+    background-color: #6c757d;
+}
+
+#hide-signup-btn:hover, #show-signup-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Bouton de Déconnexion */
+#logout-btn {
+    background-color: #dc3545; /* Rouge pour une action critique */
+    float: right;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
+}
+
+/* ==================================== */
+/* 4. Zones Spécifiques                 */
+/* ==================================== */
+
+/* État d'authentification */
+#auth-status {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    background-color: #e9f7ff; /* Bleu très pâle */
+    border: 1px solid #b3e0ff;
+}
+
+#auth-status strong {
+    color: #007bff;
+    font-weight: 600;
+}
+
+#login-forms p {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+}
+
+/* Zone de publication */
+#posting-area form {
+    background-color: #f8f8f8;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+/* ==================================== */
+/* 5. Fil d'actualités (Messages)       */
+/* ==================================== */
+
+#messages-list {
+    margin-top: 20px;
+    /* On retire la bordure supérieure car les items ont déjà des bordures/ombres */
+    border-top: none; 
+    padding-top: 0;
+}
+
+.message-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 5px solid #007bff; /* Barre latérale distinctive */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    transition: transform 0.2s;
+}
+
+.message-item:hover {
+    transform: translateY(-2px); /* Effet subtil au survol */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.message-item p {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    line-height: 1.5;
+}
+
+.message-item small {
+    display: block;
+    color: #777;
+    font-size: 0.85em;
+    border-top: 1px dashed #eee;
+    padding-top: 5px;
+}
+
+.message-item small strong {
+    color: #333;
+    font-weight: 500;
+}
+ </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <h1>Mon Chat Firebase</h1>
 
-  <!-- 🔹 Authentification -->
-  <div id="auth-section">
-    <h2>Connexion / Inscription</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Mot de passe">
-    <button id="signup-btn">S'inscrire</button>
-    <button id="login-btn">Se connecter</button>
-    <button id="logout-btn">Se déconnecter</button>
-  </div>
+    <h1>Collaborative News Feed </h1>
 
-  <!-- 🔹 Formulaire pour poster un message -->
-  <div id="post-section" style="display:none;">
-    <h2>Envoyer un message</h2>
-    <input type="text" id="message" placeholder="Votre message">
-    <button id="send-btn">Envoyer</button>
-  </div>
+    <section id="auth-area">
+        <h2>Authentification</h2>
+        <div id="auth-status">
+            Actuellement déconnecté.
+        </div>
 
-  <!-- 🔹 Liste des messages -->
-  <div id="messages-section">
-    <h2>Messages :</h2>
-    <ul id="messages-list"></ul>
-  </div>
+        <div id="login-forms" style="display: none;">
+            <h3>Se connecter / S'inscrire</h3>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required><br>
+                <input type="password" id="login-password" placeholder="Mot de passe" required><br>
+                <button type="submit">Se connecter</button>
+            </form>
+            <p>Pas de compte ? <button id="show-signup-btn">Créer un compte</button></p>
+            
+            <form id="signup-form" style="display: none;">
+                <input type="email" id="signup-email" placeholder="Email" required><br>
+                <input type="password" id="signup-password" placeholder="Mot de passe" required><br>
+                <button type="submit">S'inscrire</button>
+                <button type="button" id="hide-signup-btn">Annuler</button>
+            </form>
+        </div>
+        
+        <button id="logout-btn" style="display: none;">Se déconnecter</button>
+    </section>
 
-  <script>
-    // 🔹 Config Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDM2jPaCv30Goat6_labd6Eszc--u7g8xE",
-      authDomain: "cloudit3-4722b.firebaseapp.com",
-      projectId: "cloudit3-4722b",
-      storageBucket: "cloudit3-4722b.firebasestorage.app",
-      messagingSenderId: "301313914854",
-      appId: "1:301313914854:web:a53151373120b16b260827"
-    };
+    <hr>
 
-    // 🔹 Initialiser Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    <section id="posting-area" style="display: none;">
+        <h2>Poster une nouvelle </h2>
+        <form id="message-form">
+            <textarea id="message-content" rows="3" placeholder="Votre message ou statut..." required></textarea><br>
+            <button type="submit">Publier</button>
+        </form>
+    </section>
+    
+    <hr>
 
-    // 🔹 Elements DOM
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    const signupBtn = document.getElementById("signup-btn");
-    const loginBtn = document.getElementById("login-btn");
-    const logoutBtn = document.getElementById("logout-btn");
-    const postSection = document.getElementById("post-section");
-    const messageInput = document.getElementById("message");
-    const sendBtn = document.getElementById("send-btn");
-    const messagesList = document.getElementById("messages-list");
+    <section id="display-area">
+        <h2>Fil d'actualités</h2>
+        <div id="messages-list">
+            <p>Chargement des messages...</p>
+        </div>
+    </section>
 
-    // 🔹 Sign up
-    signupBtn.addEventListener("click", () => {
-      auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
-        .then(userCredential => alert("Utilisateur créé !"))
-        .catch(error => alert(error.message));
-    });
-
-    // 🔹 Login
-    loginBtn.addEventListener("click", () => {
-      auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
-        .then(userCredential => alert("Connecté !"))
-        .catch(error => alert(error.message));
-    });
-
-    // 🔹 Logout
-    logoutBtn.addEventListener("click", () => {
-      auth.signOut();
-    });
-
-    // 🔹 Observer l'état de connexion
-    auth.onAuthStateChanged(user => {
-      postSection.style.display = user ? "block" : "none";
-    });
-
-    // 🔹 Envoyer un message
-    sendBtn.addEventListener("click", () => {
-      if (!messageInput.value) return;
-      db.collection("messages").add({
-        texte: messageInput.value,
-        email: auth.currentUser.email,
-        date: new Date()
-      });
-      messageInput.value = "";
-    });
-
-    // 🔹 Afficher les messages en temps réel
-    db.collection("messages").orderBy("date").onSnapshot(snapshot => {
-      messagesList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = `${doc.data().email} : ${doc.data().texte}`;
-        messagesList.appendChild(li);
-      });
-    });
-  </script>
+    <script src="app.js"></script>
 </body>
 </html>
